@@ -5,18 +5,23 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt 
 import matplotlib.image as mpimg
-import ssfp
+from _lib import ssfp
 
 x, y = ssfp.SSFP_Spectrum(TE=3.0/1000.0, TR=6.0/1000.0)
 x2, y2 = ssfp.SSFP_Spectrum(TE=6.0/1000.0, TR=12.0/1000.0)
 x3, y3 = ssfp.SSFP_Spectrum(TE=12.0/1000.0, TR=24.0/1000.0)
-x4, y4 = ssfp.SSFP_Spectrum(TE=3.0/1000.0, TR=6.0/1000.0)
-x5, y5 = ssfp.SSFP_Spectrum(TE=6.0/1000.0, TR=12.0/1000.0)
-x6, y6 = ssfp.SSFP_Spectrum(TE=12.0/1000.0, TR=24.0/1000.0)
+x4, y4 = ssfp.SSFP_Spectrum(TE=3.0/1000.0, TR=6.0/1000.0, dphi = math.pi)
+x5, y5 = ssfp.SSFP_Spectrum(TE=6.0/1000.0, TR=12.0/1000.0, dphi = math.pi)
+x6, y6 = ssfp.SSFP_Spectrum(TE=12.0/1000.0, TR=24.0/1000.0, dphi = math.pi)
 
 x = np.stack((x, x2, x3, x4, x5, x6))
 plt.plot(x[0,:],y)
-plt.show()
+
+plt.ion()
+for _ in range(6):
+	plt.plot(x[_,:],y)
+	plt.show()
+	plt.pause(0.5)
 
 '''
 N = 200

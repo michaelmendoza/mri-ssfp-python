@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 def a(x, L, n):
-		''' Calculates odd fourier coefficents '''
+    ''' Calculates odd fourier coefficents '''
     a, b = -L, L
     N = len(x)
     dx = (b - a) / N
@@ -14,7 +14,7 @@ def a(x, L, n):
     return (1 / L) * integration
 
 def b(x, L, n):
-		''' Calculates even fourier coefficents '''
+    ''' Calculates even fourier coefficents '''
     a, b = -L, L
     N = len(x)
     dx = (b - a) / N
@@ -22,7 +22,7 @@ def b(x, L, n):
     return (1 / L) * integration
 
 def Sf(x, L, n = 10):
-		''' Fourier series '''
+    ''' Fourier series '''
     a0 = a(x, L, 0)
     sum = np.zeros(np.size(x))
     for i in np.arange(1, n + 1):

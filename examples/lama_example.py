@@ -5,7 +5,7 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt 
 import matplotlib.image as mpimg
-import ssfp
+from _lib import ssfp
 
 M0 = 1.0; alpha = math.pi/3.0; phi = 0.0; dphi = 0.0; dphi2 = math.pi;  Nr = 200
 T1 = 790.0/1000.0; T2 = 92.0/1000.0
