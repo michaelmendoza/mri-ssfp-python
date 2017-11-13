@@ -11,7 +11,7 @@ import scipy.misc
 
 # I1 and I3 form one pair of 180 degree offset images, and I2 and I4 form
 # the other pair.
-def EllipticalModel(I1, I2, I3, I4):
+def elliptical_model(I1, I2, I3, I4):
 	# Iterate through each pixel and calculate M directly; then compare it to
 	# the maximum magnitude of all four input images.  If it is greater,
 	# replace it with the complex sum value.
@@ -83,6 +83,6 @@ def EllipticalModel(I1, I2, I3, I4):
 # I4 = scipy.io.loadmat('I4.mat')['I4']
 # print("Imported I4...")
 
-# [I, replacements] = EllipticalModel(I1, I2, I3, I4)
+# [I, replacements] = elliptical_model(I1, I2, I3, I4)
 # scipy.misc.imsave('out.jpg',np.absolute(I))
 # print("Image saved!")

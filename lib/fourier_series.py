@@ -5,24 +5,24 @@ import math
 import matplotlib.pyplot as plt 
 import matplotlib.image as mpimg
 
-''' Odd Coefficents '''
 def a(x, L, n):
+		''' Calculates odd fourier coefficents '''
     a, b = -L, L
     N = len(x)
     dx = (b - a) / N
     integration = np.sum(f(x) * np.cos((n * np.pi * x) / L)) * dx
     return (1 / L) * integration
 
-''' Even Coefficents '''
 def b(x, L, n):
+		''' Calculates even fourier coefficents '''
     a, b = -L, L
     N = len(x)
     dx = (b - a) / N
     integration = np.sum(f(x) * np.sin((n * np.pi * x) / L)) * dx
     return (1 / L) * integration
 
-''' Fourier series '''
 def Sf(x, L, n = 10):
+		''' Fourier series '''
     a0 = a(x, L, 0)
     sum = np.zeros(np.size(x))
     for i in np.arange(1, n + 1):

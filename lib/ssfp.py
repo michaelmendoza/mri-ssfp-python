@@ -8,7 +8,7 @@ import matplotlib.image as mpimg
 def SSFP_Signal(M0, alpha, phi, dphi, Nr, TR, TE, T1, T2, f0):
 		cos = math.cos
 		sin = math.sin
-
+		
 		beta = 2 * math.pi * f0 * TR
 		E1 = math.exp(-TR/T1);
 		E2 = math.exp(-TR/T2);
@@ -19,55 +19,6 @@ def SSFP_Signal(M0, alpha, phi, dphi, Nr, TR, TE, T1, T2, f0):
 		Mc = complex(Mx, My)
 		Mc = Mc * cmath.exp(complex(0,1) * beta * (TE / TR)) * math.exp(-TE / T2)
 		return Mc;
-
-def SSFP_SignalOld(M0, alpha, phi, dphi, Nr, TR, TE, T1, T2, f0):
-    
-    cos = math.cos
-    sin = math.sin
-    exp = math.exp
-    Rx = np.mat([[cos(alpha)*sin(phi)**2+cos(phi)**2, (1-cos(alpha))*cos(phi)*sin(phi),   -sin(alpha)*sin(phi)],
-              [(1-cos(alpha))*cos(phi)*sin(phi),   cos(alpha)*cos(phi)**2+sin(phi)**2, sin(alpha)*cos(phi)],
-              [sin(alpha)*sin(phi),                -sin(alpha)*cos(phi),               cos(alpha)]])
-    
-    # Get Off-Resonace Phase 
-    b = 2 * math.pi * f0 * TR
-    
-    # Generate Singal
-    M = np.mat([0, 0, M0]).T
-    for n in xrange(Nr): # Interate through Tips
-    
-        # Alpha Degree Tip
-        Mtip = Rx * M
-    
-        # T1, T2 Relaxation
-        E = np.mat(np.diag(np.array([exp(-TR/T2), exp(-TR/T2), exp(-TR/T1)])))
-        Ez = np.mat([0,0,M0*(1-exp(-TR/T1))]).T
-    
-        # Off Resonance Precession
-        P = np.mat([[cos(b),sin(b),0], [-sin(b),cos(b),0], [0,0,1]])
-    
-        # Signal after Relaxation and Off-Resonace Precession
-        M = P * E * Mtip + Ez
-    
-        # Increasing Phase for each exitation for SSPF
-        phi = phi + dphi
-        Rx = np.mat([[cos(alpha)*sin(phi)**2+cos(phi)**2, (1-cos(alpha))*cos(phi)*sin(phi),   -sin(alpha)*sin(phi)],
-                  [(1-cos(alpha))*cos(phi)*sin(phi),   cos(alpha)*cos(phi)**2+sin(phi)**2, sin(alpha)*cos(phi)],
-                  [sin(alpha)*sin(phi),                -sin(alpha)*cos(phi),               cos(alpha)]])
-
-    # After one last tip, and T1, T2 Relaxation and Beta Precession
-    Mtip = Rx * M
-    E = np.mat(np.diag(np.array([exp(-TE/T2), exp(-TE/T2), exp(-TE/T1)])))
-    Ez = np.mat([0,0,M0*(1-exp(-TE/T1))]).T
-    P = np.mat([[cos(b * TE/TR),sin(b * TE/TR),0], [-sin(b * TE/TR),cos(b * TE/TR),0], [0,0,1]])
-    M = P * E * Mtip + Ez
-
-    # Save Sample Point after Steady State is Reached
-    Mxy = np.array([M[0],M[1]])
-    Mc =  complex(M[0], M[1])
-
-            
-    return Mc
 
 def SSFP_Spectrum(M0 = 1.0, alpha = math.pi/3.0, phi = 0.0, dphi = 0.0, Nr = 200, TR = 10.0/1000.0, TE = 5.0/1000.0, 
                   T1 = 790.0/1000.0, T2 = 92.0/1000.0, Ns = 200, BetaMax = math.pi, f0 = 0.0):
@@ -99,7 +50,7 @@ def SpectrumTest():
     T1F = 270.0/1000.0; T2F = 85.0/1000.0
     T1M = 870.0/1000.0; T2M = 47.0/1000.0
 
-    f0, Mc = SSFP_Spectrum()
+    f0, Mc = SSFP_Spectrum(T1=400/1000.0, T2=173.4/1000.0)
     plot(f0, Mc)
 
 def plot(t, x):
