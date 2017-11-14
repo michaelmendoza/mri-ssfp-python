@@ -14,14 +14,27 @@ x4, y4 = ssfp.SSFP_Spectrum(TE=3.0/1000.0, TR=6.0/1000.0, dphi = math.pi)
 x5, y5 = ssfp.SSFP_Spectrum(TE=6.0/1000.0, TR=12.0/1000.0, dphi = math.pi)
 x6, y6 = ssfp.SSFP_Spectrum(TE=12.0/1000.0, TR=24.0/1000.0, dphi = math.pi)
 
-x = np.stack((x, x2, x3, x4, x5, x6))
-plt.plot(x[0,:],y)
+#x = np.stack((x, x2, x3, x4, x5, x6))
+#y = np.stack((y, y2, y3, y4, y5, y6))
+#plt.plot(x[0,:],y[0,:])
 
+
+fig, axes = plt.subplots(nrows=6)
+axes[0].plot(x, np.abs(y))
+axes[1].plot(x2, np.abs(y2))
+axes[2].plot(x3, np.abs(y3))
+axes[3].plot(x, np.abs(y4))
+axes[4].plot(x2, np.abs(y5))
+axes[5].plot(x3, np.abs(y6))
+plt.show()
+
+'''
 plt.ion()
 for _ in range(6):
-	plt.plot(x[_,:],y)
+	plt.plot(x[_,:],y[_,:])
 	plt.show()
 	plt.pause(0.5)
+'''
 
 '''
 N = 200

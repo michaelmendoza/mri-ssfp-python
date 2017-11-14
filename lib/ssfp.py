@@ -16,8 +16,8 @@ def SSFP_Signal(M0, alpha, phi, dphi, Nr, TR, TE, T1, T2, f0):
 		Mbottom = (1 - E1 * cos(alpha)) * (1 - E2 * cos(theta)) - E2 * (E1 - cos(alpha)) * (E2 - cos(theta));
 		Mx = M0 * (1 - E1) * sin(alpha) * (1 - E2 * cos(theta)) / Mbottom;
 		My = M0 * (1 - E1) * E2 * sin(alpha) * sin(theta) / Mbottom;
-		Mc = complex(Mx, My)
-		Mc = Mc * cmath.exp(complex(0,1) * beta * (TE / TR)) * math.exp(-TE / T2)
+		Mc = Mx + 1j * My
+		Mc = Mc * cmath.exp(1j * beta * (TE / TR)) * math.exp(-TE / T2)
 		return Mc;
 
 def SSFP_Spectrum(M0 = 1.0, alpha = math.pi/3.0, phi = 0.0, dphi = 0.0, Nr = 200, TR = 10.0/1000.0, TE = 5.0/1000.0, 
@@ -42,8 +42,6 @@ def SSFP_SpectrumF(M0 = 1.0, alpha = math.pi/3.0, phi = 0.0, dphi = 0.0, Nr = 20
         Mc[n] = SSFP_Signal(M0, alpha, phi, dphi, Nr, TR, TE, T1, T2, f[n])
 
     return f, Mc
-
-
 
 def SpectrumTest():
     T1 = 790.0/1000.0; T2 = 92.0/1000.0;
