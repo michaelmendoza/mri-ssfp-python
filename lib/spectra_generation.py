@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import glob
 from scipy.optimize import minimize
+import h5py
 
 def get_func(Ns,width,offset=0,amplitude=1):
     sq = np.zeros([ Ns,1 ])
@@ -17,7 +18,8 @@ def rmdTokSpace(files,rawdata=False):
             data = rmd(f,writeToFile=True)
             print('Processed file %d' % idx)
         else:
-            data = np.load(f)
+            # data = np.load(f)
+            data = h5py.File(f,'r')
             print('Read in file %d' % idx)
         if kspace is None:
             kspace = np.zeros([ data['kSpace'].shape[0],data['kSpace'].shape[1],data['kSpace'].shape[2],data['kSpace'].shape[3],len(files) ],dtype='complex')
@@ -29,14 +31,14 @@ def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_prof
     print('Loading data...')
 
     # If we have already processed the data, no need to redo the raw data processing
-    files = sorted(glob.glob('%s/*.npz' % directory))
+    files = sorted(glob.glob('%s/*.hdf5' % directory))
     if len(files) > 0:
-        print('NPZ files found!')
+        print('HDF5 files found!')
         # load in those files
         kspace = rmdTokSpace(files)
     else:
         # Find all the .dat files in the directory
-        files = glob.glob('%s/*.dat' % directory)
+        files = sorted(glob.glob('%s/*.dat' % directory))
         kspace = rmdTokSpace(files,True)
 
     return(kspace)
@@ -88,8 +90,9 @@ def apply_coeffs(kSpace,c):
             imData = np.fft.ifftshift(np.fft.ifft2(avg))
 
             # Put together the image
-            res[:,:,coil] += imData*c[ii]
-    res = np.sum(np.abs(res**2),axis=2)
+            res[:,:,coil] += (imData*c[ii])**2
+
+    res = np.sum(np.abs(res),axis=2)
     return(res)
 
 def est_obj(x,imData,args,TEs,dphis,show=False):
@@ -140,11 +143,6 @@ def est_params(kSpace,args,TEs,dphis):
 
     res = np.sqrt(np.sum(res,axis=2))
 
-    # Look at them to make sure we did alright
-    # for ii in range(res.shape[-1]):
-    #     plt.imshow(np.abs(res[:,:,ii]),cmap='gray')
-    #     plt.show()
-
     # Set up an optimization problem to find T1,T2
     x0 = np.array([ 0.8,0.3,np.pi/3 ],dtype=np.float32)
     def con(x):
@@ -153,8 +151,14 @@ def est_params(kSpace,args,TEs,dphis):
     print('T1: %g \t T2: %g \t alpha: %g' % (x['x'][0],x['x'][1],x['x'][2]))
     est_obj(x['x'],res,args,TEs,dphis,show=True)
 
-    # x = np.array([ .25,.24,250,-1.2 ],dtype=np.float32)
-    # est_obj(x,res,args,TEs,dphis,show=True)
+    # Look at them to make sure we did alright and check the order
+    # sim_basis = gen_sim_basis(args,TEs,np.add(dphis,args['phi']))
+    # for ii in range(res.shape[-1]):
+    #     plt.subplot(2,1,1)
+    #     plt.imshow(np.abs(res[:,:,ii]),cmap='gray')
+    #     plt.subplot(2,1,2)
+    #     plt.plot(np.abs(sim_basis[:,ii+1]))
+    #     plt.show()
 
     return(x['x'][0],x['x'][1],x['x'][2])
 
