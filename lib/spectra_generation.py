@@ -89,7 +89,7 @@ def apply_coeffs(kSpace,c):
 
             # Put together the image
             res[:,:,coil] += imData*c[ii]
-    res = np.sum(np.abs(res)**2,axis=2)
+    res = np.sum(np.abs(res**2),axis=2)
     return(res)
 
 def est_obj(x,imData,args,TEs,dphis,show=False):
