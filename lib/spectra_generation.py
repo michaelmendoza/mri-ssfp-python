@@ -8,7 +8,8 @@ import h5py
 
 def get_func(Ns,width,offset=0,amplitude=1):
     sq = np.zeros([ Ns,1 ])
-    sq[int(offset-width/2):int(offset+width/2)] = 1
+    sq[int(Ns/2-width/2):int(Ns/2+width/2)] = 1
+    sq = np.roll(sq,int(offset*Ns))
     return(sq)
 
 def rmdTokSpace(files,rawdata=False):
@@ -47,13 +48,13 @@ def SSFP_data_formatter(alpha,Ns,T1,T2):
     return({
         'M0': 1.0,
         'alpha': alpha,
-        'phi': -1.2,
+        # 'phi': -1.2,
         'Nr': 200,
         'T1': T1,
         'T2': T2,
         'Ns': Ns,
         'f0': 0,
-        'f1': 250
+        # 'f1': 250
     })
 
 def gen_sim_basis(args,TEs,dphis,orthog=False):
@@ -61,7 +62,7 @@ def gen_sim_basis(args,TEs,dphis,orthog=False):
     idx = 1
     for dphi in dphis:
         for TE in TEs:
-            f,Mc = ssfp.SSFP_SpectrumF(**args,TR=2*TE,TE=TE,dphi=dphi)
+            f,Mc = ssfp.SSFP_SpectrumF(**args,TR=2*TE,TE=TE,dphi=dphi+args['phi'][idx-1])
             # Tuck Mc away
             sim_basis[:,idx] = Mc
             idx += 1
@@ -90,45 +91,56 @@ def apply_coeffs(kSpace,c):
             imData = np.fft.ifftshift(np.fft.ifft2(avg))
 
             # Put together the image
-            res[:,:,coil] += (imData*c[ii])**2
+            res[:,:,coil] += (imData*c[ii+1])**2
 
     res = np.sum(np.abs(res),axis=2)
+    print(c)
+    print(np.abs(c)/np.max(np.abs(c)))
     return(res)
 
 def est_obj(x,imData,args,TEs,dphis,show=False):
     args['T1'] = x[0]
     args['T2'] = x[1]
     args['alpha'] = x[2]
+    args['phi'] = x[3:]
     # args['f1'] = 250
     # phi0 = -1.2 # constant phi offset to match up the start
 
     cost = 0
     center = int(imData.shape[1]/2)
     pad = 10
-    # for ii in range(imData.shape[-1]):
-    for ii in [ 4 ]:
-        prof = np.mean(np.abs(imData[:,center-pad:center+pad,ii]),axis=1)
-        prof /= np.max(prof)
+
+    if show:
+        r = range(imData.shape[-1])
+    else:
+        # r = [ 4 ]
+        r = range(imData.shape[-1])
+
+    for ii in r:
+        prof = np.mean(imData[:,center-pad:center+pad,ii],axis=1)
+        prof /= np.max(np.abs(prof))
         prof[np.abs(prof) < .5*np.mean(prof)] = 0
-        prof = prof[prof > 0] # we don't want empty space
-        prof = prof[2:-2] # we don't want the edges
-        prof -= np.min(prof)
-        prof /= np.max(prof)
+        prof = prof[np.abs(prof) > 0] # we don't want empty space
+        prof = prof[1:-1] # we don't want the edges
+        prof -= np.min(np.abs(prof))
+        prof /= np.max(np.abs(prof))
 
         args['Ns'] = len(prof)
-        sim_basis = gen_sim_basis(args,TEs,np.add(dphis,args['phi']))
-        sim_prof = np.abs(sim_basis[:,ii+1]) #+ np.min(np.abs(prof))
-        sim_prof /= np.max(sim_prof)
+        sim_basis = gen_sim_basis(args,TEs,dphis)
+        sim_prof = sim_basis[:,ii+1]
+        sim_prof /= np.max(np.abs(sim_prof))
 
         if show:
-            plt.plot(sim_prof,label='Simulated Profile')
-            plt.plot(prof,label='Center line')
-            plt.title('T1,T2,alpha Estimation')
-            plt.xlabel('T1: %g, T2: %g, alpha: %g' % (x[0],x[1],x[2]))
-            plt.legend()
-            plt.show()
+            plt.subplot(imData.shape[-1],1,ii+1)
+            plt.plot(np.abs(sim_prof))
+            plt.plot(np.abs(prof))
 
-        cost += np.sum(np.sqrt((sim_prof - prof)**2))
+        cost += np.sum(np.sqrt(np.abs((sim_prof - prof)**2)))
+
+    if show:
+        plt.xlabel('T1: %g, T2: %g, alpha: %g' % (x[0],x[1],x[2]))
+        plt.show()
+
     return(cost)
 
 def est_params(kSpace,args,TEs,dphis):
@@ -143,44 +155,52 @@ def est_params(kSpace,args,TEs,dphis):
 
     res = np.sqrt(np.sum(res,axis=2))
 
-    # Set up an optimization problem to find T1,T2
-    x0 = np.array([ 0.8,0.3,np.pi/3 ],dtype=np.float32)
+    # Set up an optimization problem to find T1,T2,alpha,f1
+    x0 = np.array([ 1,0.5,np.pi/2,250 ],dtype=np.float32)
+    phis = np.ones(res.shape[-1])*-1.2
+    x0 = np.append(x0,phis)
     def con(x):
         return(x[0] - x[1])
-    x = minimize(lambda x: est_obj(x,res,args,TEs,dphis),x0,bounds=[ (0,2.),(0,1.),(0,np.pi/3) ],constraints={ 'type':'ineq','fun':con })
-    print('T1: %g \t T2: %g \t alpha: %g' % (x['x'][0],x['x'][1],x['x'][2]))
+    # bounds=[ (0,2.),(0,1.),(0,np.pi/2) ]
+    bnds = [ (0,None),(0,None),(0,None),(200,300) ]
+    for p in x0[4:]:
+        bnds.append((None,None))
+
+    x = minimize(lambda x: est_obj(x,res,args,TEs,dphis),x0,bounds=bnds,constraints={ 'type':'ineq','fun':con })
+    print('T1: %g \t T2: %g \t alpha: %g \t f1: %g' % (x['x'][0],x['x'][1],x['x'][2],x['x'][3]))
+    print(x['x'][4:])
     est_obj(x['x'],res,args,TEs,dphis,show=True)
 
     # Look at them to make sure we did alright and check the order
     # sim_basis = gen_sim_basis(args,TEs,np.add(dphis,args['phi']))
     # for ii in range(res.shape[-1]):
+    #     plt.figure()
     #     plt.subplot(2,1,1)
     #     plt.imshow(np.abs(res[:,:,ii]),cmap='gray')
     #     plt.subplot(2,1,2)
     #     plt.plot(np.abs(sim_basis[:,ii+1]))
-    #     plt.show()
+    # plt.show()
 
-    return(x['x'][0],x['x'][1],x['x'][2])
+    return(x['x'][0],x['x'][1],x['x'][2],x['x'][3],x['x'][4:])
 
 
 def plotter(sim_basis,f,approx,res):
     # Show the simulated basis
+    plt.figure()
     plt.subplot(2,1,1)
     plt.plot(np.absolute(sim_basis))
     plt.title('Simulated Basis')
     plt.subplot(2,1,2)
     plt.plot(f,label='Function')
+    plt.plot(np.absolute(approx),label='Approx.')
     plt.legend()
-    plt.show()
 
     # check out how well we did
-    plt.subplot(3,1,1)
+    plt.figure()
+    plt.subplot(2,1,1)
     plt.imshow(np.transpose(np.abs(res)),cmap='gray')
     plt.title('Filtered SOS Image')
-    plt.subplot(3,1,2)
-    plt.plot(np.absolute(approx),label='Function Approx.')
-    plt.legend()
-    plt.subplot(3,1,3)
+    plt.subplot(2,1,2)
     plt.plot(np.abs(res[:,int(res.shape[1]/2)]),label='center line')
     plt.legend()
     plt.show()
@@ -194,17 +214,18 @@ def run(kSpace,
         Ns=500):
 
     if offset is None:
-        offset = int(Ns/2)
-
+        offset = 0
 
     # Arguments for ssfp.SSFP_SpectrumF()
     args = SSFP_data_formatter(alpha,Ns,800./1000,200./1000)
 
     # Estimate T1,T2
-    T1,T2,alpha = est_params(kSpace,args.copy(),TEs,dphis)
+    T1,T2,alpha,f1,phis = est_params(kSpace,args.copy(),TEs,dphis)
     args['T1'] = T1
     args['T2'] = T2
     args['alpha'] = alpha
+    args['f1'] = f1
+    args['phi'] = phis
 
     # Generate the basis
     sim_basis = gen_sim_basis(args,TEs,dphis)
