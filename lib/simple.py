@@ -97,20 +97,30 @@ def combine_line_coils(lines,idx=None):
     combined = np.sqrt(np.sum(np.abs(lines[:,:,idx]),axis=1))
     return(combined)
 
-def show_center_lines(lines,idx=None):
+def show_center_lines(lines,idx=None,fig_id=None,show=True):
     '''Plots the absolute value of the lines.'''
 
     if idx is None:
         idx = range(lines.shape[-1])
 
-    # Combine coils
+    # Combine coils and normalize
     combined = combine_line_coils(lines)
+    combined /= np.max(combined)
 
-    plt.figure()
+    if fig_id is None:
+        fig0 = plt.figure()
+    else:
+        fig0 = plt.figure(fig_id)
+
     for ii in idx:
         plt.subplot(len(idx),1,ii+1)
         plt.plot(combined[:,ii])
-    plt.show()
+
+    if show:
+        plt.show()
+
+    if fig_id is None:
+        return(fig0.number)
 
 def show_csm(csm):
     for ii in range(csm.shape[0]):
@@ -121,7 +131,7 @@ def get_func(Ns,width,offset=0,amplitude=1):
     sq = np.zeros(Ns)
     sq[int(Ns/2-width/2):int(Ns/2+width/2)] = 1
     sq = np.roll(sq,int(offset*Ns))
-    return(1-sq)
+    return(sq)
 
 def get_coeffs(lines,f):
     coeffs = np.squeeze(np.linalg.lstsq(lines,f,rcond=None)[0])
@@ -168,14 +178,21 @@ def solve_and_apply_coeffs(corrected_coil_lines,corrected_coil_ims,im_squares,f)
     line_res = np.zeros(f.shape)
     im_res = np.zeros([ im_squares.shape[0],im_squares.shape[1] ])
     for c in range(coeffs.shape[-1]):
+
+        # Let's be normal
+        lines = corrected_coil_lines[:,c,:]
+        lines /= np.max(lines)
+        ims = corrected_coil_ims[:,:,c,:]
+        ims /= np.max(ims,axis=(0,1))
+
         # get coeffs for the ii'th image's c'th coil
-        coeffs[:,c],approx = get_coeffs(corrected_coil_lines[:,c,:],f)
+        coeffs[:,c],approx = get_coeffs(lines,f)
 
         # We need to apply coefficients to each coil line
-        line_res += np.abs((corrected_coil_lines[:,c,:].dot(coeffs[:,c]))**2)
+        line_res += np.abs((lines.dot(coeffs[:,c]))**2)
 
         # Now try applying the coefficients to each coil image proper
-        im_res += np.abs((corrected_coil_ims[:,:,c,:].dot(coeffs[:,c]))**2)
+        im_res += np.abs((ims.dot(coeffs[:,c]))**2)
 
     line_res = np.sqrt(line_res)
     im_res = np.sqrt(im_res)
@@ -188,16 +205,13 @@ def plot_result(line_res,im_res,f):
     mid,pad = int(im_res.shape[1]/2),10
     im_mid_slice = np.mean(im_res[:,mid-pad:mid+pad],axis=1)
 
-    plt.subplot(3,1,1)
+    plt.subplot(2,1,1)
     plt.imshow(np.transpose(im_res),cmap='gray')
     plt.title('Filtered SOS Image')
-    plt.subplot(3,1,2)
+    plt.subplot(2,1,2)
     plt.plot(im_mid_slice,label='Center Slices of Image')
-    plt.plot(line_res,label='Single Line Approx.')
     plt.plot(f,label='Forcing Function')
     plt.legend()
-    plt.subplot(3,1,3)
-    plt.plot(np.abs(line_res - im_mid_slice),label='Error Between Single line approx and center slices of image')
     plt.legend()
     plt.show()
 
@@ -223,10 +237,12 @@ def run(kspace,use_sim_coeff=False):
 
     # Generate the simulated basis and images if needed
     if use_sim_coeff:
-        corrected_coil_lines_sim = gen_sim_basis(corrected_coil_lines)
+        fig_id = show_center_lines(corrected_coil_lines,show=False)
+        corrected_coil_lines = gen_sim_basis(corrected_coil_lines)
+        show_center_lines(corrected_coil_lines,fig_id=fig_id)
 
     # Generate forcing function
-    f = get_func(Ns=corrected_coil_lines.shape[0],width=30,offset=0)
+    f = get_func(Ns=corrected_coil_lines.shape[0],width=50,offset=0.5)
 
     # Solve for coefficients and apply them
     line_res,im_res = solve_and_apply_coeffs(corrected_coil_lines,corrected_coil_ims,im_squares,f)
