@@ -1,5 +1,6 @@
 import numpy as np
 from spectra_generation import loader
+from sim_basis import gen_sim_basis
 import matplotlib.pyplot as plt
 
 def simple_csm(imdata,rows=None):
@@ -48,7 +49,7 @@ def trim_to_center_line(imdata):
     lines = imdata[:,center_idx,:,:]
     return(lines)
 
-def trim_to_basis(lines,idx=None):
+def trim_to_basis(lines,idx=None,orthog=False):
     '''Gives back only the line through the phantom, not empty space.'''
 
     if idx is None:
@@ -65,7 +66,28 @@ def trim_to_basis(lines,idx=None):
 
     # Make the lines go from start to stop
     trimmed = lines[first:last,:,idx]
+
+    # Orthogonalize the set if we asked for it
+    if orthog:
+        for ii in idx:
+            # trimmed[:,:,ii],r = np.linalg.qr(trimmed[:,:,ii])
+            print('in: ',end='')
+            print(trimmed[:,:,ii].shape)
+            tmp = gram_schmidt(np.transpose(trimmed[:,:,ii]))
+            print('out: ',end='')
+            print(np.transpose(tmp).shape)
+            trimmed[:,:,ii] = np.transpose(tmp)
+
     return(trimmed,first,last)
+
+def gram_schmidt(vectors):
+    basis = []
+    for v in vectors:
+        w = v - np.sum(np.dot(v,b)*b for b in basis)
+        if (w > 1e-10).any():
+            basis.append(w/np.linalg.norm(w))
+    return(np.array(basis))
+
 
 def combine_line_coils(lines,idx=None):
     '''Gives back the sum of squares of each line, collapsing the coil dim.'''
@@ -122,22 +144,11 @@ def add_constant_im(imdata):
 
     return(imdata_tmp)
 
-def use_meas_basis(kspace,use_sim_coeff=False):
-    # Get image space data
-    imdata = get_imspace(kspace)
 
-    # Add constant term
-    # imdata = add_constant_im(imdata)
-
-    # reduce to only center lines
-    lines,first,last = trim_to_basis(trim_to_center_line(imdata))
-    im_squares = imdata[first:last,:,:,:]
-
-    # Try using complex values sensitivity map?
-    csm = simple_csm(imdata,rows=range(first,last))
+def correct_with_csm(csm,lines,im_squares):
+    # Get the line version
     csm_lines = trim_to_center_line(csm)
 
-    # Find sensitivity corrected coil lines
     combined = combine_line_coils(lines)
     corrected_coil_lines = np.zeros(lines.shape,dtype='complex')
     corrected_coil_ims = np.zeros(im_squares.shape,dtype='complex')
@@ -149,15 +160,10 @@ def use_meas_basis(kspace,use_sim_coeff=False):
             # Correct the coil image using the sensitivity profile
             corrected_coil_ims[:,:,c,ii] = im_squares[:,:,c,ii]/csm[:,:,c,ii]
 
-    if use_sim_coeff:
-        # Find T1,T2,alpha
-        # Generate simulated basis
-        pass
+    return(corrected_coil_lines,corrected_coil_ims)
 
-    # Generate forcing function
-    f = get_func(Ns=corrected_coil_lines.shape[0],width=50,offset=0)
 
-    # Solve for coefficients
+def solve_and_apply_coeffs(corrected_coil_lines,corrected_coil_ims,im_squares,f):
     coeffs = np.zeros([ corrected_coil_lines.shape[2],corrected_coil_lines.shape[1] ],dtype='complex')
     line_res = np.zeros(f.shape)
     im_res = np.zeros([ im_squares.shape[0],im_squares.shape[1] ])
@@ -174,6 +180,10 @@ def use_meas_basis(kspace,use_sim_coeff=False):
     line_res = np.sqrt(line_res)
     im_res = np.sqrt(im_res)
 
+    return(line_res,im_res)
+
+
+def plot_result(line_res,im_res,f):
     # Grab a mid slice from the image to compare against the line
     mid,pad = int(im_res.shape[1]/2),10
     im_mid_slice = np.mean(im_res[:,mid-pad:mid+pad],axis=1)
@@ -190,3 +200,36 @@ def use_meas_basis(kspace,use_sim_coeff=False):
     plt.plot(np.abs(line_res - im_mid_slice),label='Error Between Single line approx and center slices of image')
     plt.legend()
     plt.show()
+
+def run(kspace,use_sim_coeff=False):
+    # Get image space data
+    imdata = get_imspace(kspace)
+
+    # Add constant term
+    # This doesn't seem to add much...
+    # imdata = add_constant_im(imdata)
+
+    # reduce to only center lines
+    lines,first,last = trim_to_basis(trim_to_center_line(imdata),orthog=False)
+
+    # Remove empty space from beginning and end of images
+    im_squares = imdata[first:last,:,:,:]
+
+    # Get Coil sensitivity maps
+    csm = simple_csm(imdata,rows=range(first,last))
+
+    # Find sensitivity corrected coil lines and images
+    corrected_coil_lines,corrected_coil_ims = correct_with_csm(csm,lines,im_squares)
+
+    # Generate the simulated basis and images if needed
+    if use_sim_coeff:
+        corrected_coil_lines_sim = gen_sim_basis(corrected_coil_lines)
+
+    # Generate forcing function
+    f = get_func(Ns=corrected_coil_lines.shape[0],width=30,offset=0)
+
+    # Solve for coefficients and apply them
+    line_res,im_res = solve_and_apply_coeffs(corrected_coil_lines,corrected_coil_ims,im_squares,f)
+
+    # Show me da money
+    plot_result(line_res,im_res,f)
