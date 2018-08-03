@@ -36,6 +36,9 @@ def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_prof
     if len(files) > 0:
         print('HDF5 files found!')
 
+        if idx is None:
+            idx = range(len(files))
+
         # Get as many as we want
         fs = [ files[ii] for ii in idx ]
 
