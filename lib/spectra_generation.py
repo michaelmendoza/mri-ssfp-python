@@ -12,11 +12,11 @@ def get_func(Ns,width,offset=0,amplitude=1):
     sq = np.roll(sq,int(offset*Ns))
     return(sq)
 
-def rmdTokSpace(files,rawdata=False):
+def rmdTokSpace(files,rawdata=False,save=True):
     kspace = None
     for idx,f in enumerate(files):
         if rawdata:
-            data = rmd(f,writeToFile=True)
+            data = rmd(f,writeToFile=save)
             print('Processed file %d' % idx)
         else:
             # data = np.load(f)
@@ -28,7 +28,7 @@ def rmdTokSpace(files,rawdata=False):
         kspace[:,:,:,:,idx] = data['kSpace']
     return(kspace)
 
-def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_profiles/data/1212017_SSFP_Spectral_Profile_Phantom_Set2',idx=None):
+def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_profiles/data/1212017_SSFP_Spectral_Profile_Phantom_Set2',idx=None,save=True):
     print('Loading data...')
 
     # If we have already processed the data, no need to redo the raw data processing
@@ -43,7 +43,7 @@ def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_prof
         fs = [ files[ii] for ii in idx ]
 
         # load in those files
-        kspace = rmdTokSpace(fs)
+        kspace = rmdTokSpace(fs,save=save)
     else:
         # Find all the .dat files in the directory
         files = sorted(glob.glob('%s/*.dat' % directory))
