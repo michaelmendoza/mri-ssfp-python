@@ -28,15 +28,19 @@ def rmdTokSpace(files,rawdata=False):
         kspace[:,:,:,:,idx] = data['kSpace']
     return(kspace)
 
-def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_profiles/data/1212017_SSFP_Spectral_Profile_Phantom_Set2'):
+def loader(directory='/home/nicholas/Documents/mri-ssfp-matlab/lib/spectral_profiles/data/1212017_SSFP_Spectral_Profile_Phantom_Set2',idx=None):
     print('Loading data...')
 
     # If we have already processed the data, no need to redo the raw data processing
     files = sorted(glob.glob('%s/*.hdf5' % directory))
     if len(files) > 0:
         print('HDF5 files found!')
+
+        # Get as many as we want
+        fs = [ files[ii] for ii in idx ]
+
         # load in those files
-        kspace = rmdTokSpace(files)
+        kspace = rmdTokSpace(fs)
     else:
         # Find all the .dat files in the directory
         files = sorted(glob.glob('%s/*.dat' % directory))

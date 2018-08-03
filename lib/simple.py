@@ -88,7 +88,6 @@ def gram_schmidt(vectors):
             basis.append(w/np.linalg.norm(w))
     return(np.array(basis))
 
-
 def combine_line_coils(lines,idx=None):
     '''Gives back the sum of squares of each line, collapsing the coil dim.'''
 
@@ -215,7 +214,7 @@ def plot_result(line_res,im_res,f):
     plt.legend()
     plt.show()
 
-def run(kspace,use_sim_coeff=False):
+def run(kspace,use_sim_coeff=False,offset=0,width=50):
     # Get image space data
     imdata = get_imspace(kspace)
 
@@ -242,7 +241,7 @@ def run(kspace,use_sim_coeff=False):
         show_center_lines(corrected_coil_lines,fig_id=fig_id)
 
     # Generate forcing function
-    f = get_func(Ns=corrected_coil_lines.shape[0],width=50,offset=0.5)
+    f = get_func(Ns=corrected_coil_lines.shape[0],width=width,offset=offset)
 
     # Solve for coefficients and apply them
     line_res,im_res = solve_and_apply_coeffs(corrected_coil_lines,corrected_coil_ims,im_squares,f)
