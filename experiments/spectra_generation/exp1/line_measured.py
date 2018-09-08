@@ -5,11 +5,7 @@ import glob
 from lib.coil import calculate_csm_inati_iter
 from experiments.spectra_generation.exp1.line_simulation import *
 from scipy.optimize import minimize
-
-# Add mr_utils
-import sys
-sys.path.append('/home/nicholas/Documents/mr_utils')
-from load_data import load_raw
+from mr_utils.load_data import load_raw
 
 def loader(use='bart'):
     '''Specific to current dataset.'''
