@@ -1,4 +1,4 @@
-import ssfp
+import lib.ssfp
 from rawdatarinator.readMeasDataVB15 import readMeasDataVB15 as rmd
 import numpy as np
 import matplotlib.pyplot as plt

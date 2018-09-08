@@ -1,6 +1,6 @@
 import numpy as np
-from spectra_generation import loader
-from sim_basis import gen_sim_basis
+from experiments.spectra_generation.spectra_generation import loader
+from experiments.spectra_generation.sim_basis import gen_sim_basis
 import matplotlib.pyplot as plt
 
 def simple_csm(imdata,rows=None):

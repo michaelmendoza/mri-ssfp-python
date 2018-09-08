@@ -1,5 +1,5 @@
 import numpy as np
-import ssfp
+import lib.ssfp
 import scipy
 import matplotlib.pyplot as plt
 
