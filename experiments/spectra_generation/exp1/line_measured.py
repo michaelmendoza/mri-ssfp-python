@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import glob
 from lib.coil import calculate_csm_inati_iter
-from experiments.spectra_generation.line_simulation import *
+from experiments.spectra_generation.exp1.line_simulation import *
 from scipy.optimize import minimize
 
 # Add mr_utils
