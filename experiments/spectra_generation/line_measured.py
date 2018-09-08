@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import glob
-from coil import calculate_csm_inati_iter
-from oned_simulation import *
+from lib.coil import calculate_csm_inati_iter
+from experiments.spectra_generation.line_simulation import *
 from scipy.optimize import minimize
 
 # Add mr_utils

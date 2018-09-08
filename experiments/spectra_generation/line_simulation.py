@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from ssfp import SSFP_SpectrumF as ssfp_sim
+from lib.ssfp import SSFP_SpectrumF as ssfp_sim
 
 def square(l,idx,w=1,val=1):
     '''Create a square function.
